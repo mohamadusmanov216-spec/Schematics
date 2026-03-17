@@ -4,7 +4,7 @@
   "command.sbuild.status.summary": "Status: schematic=%s, blocks=%s",
   "command.sbuild.help.header": "Команды SBuild:",
   "command.sbuild.help.status": ".sbuild status",
-  "command.sbuild.help.schematic": ".sbuild schematic scan|list|load <name>|info|storage",
+  "command.sbuild.help.schematic": ".sbuild schematic|shematic scan|list|load <name>|info|storage|up <n>|down <n>|left <n>|right <n>",
   "command.sbuild.help.materials": ".sbuild materials|material [report|gui]",
   "command.sbuild.help.chest": ".sbuild chest set [name]|list",
   "command.sbuild.help.planner": ".sbuild planner preview",

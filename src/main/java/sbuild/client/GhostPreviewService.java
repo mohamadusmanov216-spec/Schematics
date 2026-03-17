@@ -60,10 +60,12 @@ public final class GhostPreviewService {
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
+        VertexConsumer fill = consumers.getBuffer(RenderLayer.getDebugFilledBox());
         VertexConsumer lines = consumers.getBuffer(RenderLayer.getLines());
 
         try {
             int rendered = 0;
+            boolean fillAvailable = true;
             for (Map.Entry<LoadedSchematic.BlockPosition, SchematicBlockState> entry : placement.transformedEntries()) {
                 if (rendered >= MAX_BLOCKS_PER_FRAME) {
                     break;
@@ -74,6 +76,16 @@ public final class GhostPreviewService {
                 }
 
                 float[] color = colorForState(entry.getValue());
+                if (fillAvailable) {
+                    try {
+                        VertexRendering.drawFilledBox(matrices, fill,
+                            pos.x() + 0.06, pos.y() + 0.06, pos.z() + 0.06,
+                            pos.x() + 0.94, pos.y() + 0.94, pos.z() + 0.94,
+                            color[0], color[1], color[2], 0.20f);
+                    } catch (IllegalStateException ignored) {
+                        fillAvailable = false;
+                    }
+                }
                 VertexRendering.drawBox(matrices, lines,
                     pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
                     pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,

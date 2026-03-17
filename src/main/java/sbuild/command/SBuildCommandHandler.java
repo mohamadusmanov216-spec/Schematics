@@ -22,6 +22,7 @@ import sbuild.planner.BuildPlannerService;
 import sbuild.schematic.LoadedSchematic;
 import sbuild.schematic.PlacementController;
 import sbuild.schematic.SchematicService;
+import sbuild.schematic.SchematicTransform;
 import sbuild.state.BuildStateService;
 import sbuild.storage.StoragePoint;
 import sbuild.storage.StorageService;
@@ -157,6 +158,7 @@ public final class SBuildCommandHandler {
             return schematics.loadByName(name)
                 .map(loaded -> {
                     buildState.setLoadedSchematic(loaded);
+                    alignLoadedSchematicToPlayerY(ctx.getSource(), loaded);
                     sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.success", loaded.name(), loaded.blockCount()));
                     return 1;
                 })
@@ -170,6 +172,14 @@ public final class SBuildCommandHandler {
             sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.failed", name, reason));
             return 0;
         }
+    }
+
+    public int handleSchematicShiftY(CommandContext<ServerCommandSource> ctx, int deltaY) {
+        return applySchematicShift(ctx.getSource(), 0, deltaY, 0, "Y");
+    }
+
+    public int handleSchematicShiftX(CommandContext<ServerCommandSource> ctx, int deltaX) {
+        return applySchematicShift(ctx.getSource(), deltaX, 0, 0, "X");
     }
 
     public int handleSchematicInfo(CommandContext<ServerCommandSource> ctx) {
@@ -225,7 +235,7 @@ public final class SBuildCommandHandler {
     }
 
     public int handleMaterialsGui(CommandContext<ServerCommandSource> ctx) {
-        MaterialReport report = buildState.lastMaterialReport();
+        MaterialReport report = resolveReportForGui(ctx.getSource());
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) {
             sendError(ctx.getSource(), Text.literal("Клиент Minecraft недоступен."));
@@ -335,6 +345,60 @@ public final class SBuildCommandHandler {
             sendError(source, Text.translatable("command.sbuild.error.no_loaded_schematic"));
         }
         return placement;
+    }
+
+    private int applySchematicShift(ServerCommandSource source, int dx, int dy, int dz, String axis) {
+        if (buildState.loadedSchematic().isEmpty()) {
+            sendError(source, Text.translatable("command.sbuild.error.no_loaded_schematic"));
+            return 0;
+        }
+        SchematicTransform current = buildState.transform();
+        SchematicTransform next = new SchematicTransform(
+            current.rotation(),
+            current.mirror(),
+            current.offsetX() + dx,
+            current.offsetY() + dy,
+            current.offsetZ() + dz
+        );
+        buildState.updateTransform(next);
+        sendInfo(source, Text.literal("Сдвиг схематики по " + axis + ": " + (axis.equals("X") ? next.offsetX() : next.offsetY())));
+        return 1;
+    }
+
+    private void alignLoadedSchematicToPlayerY(ServerCommandSource source, LoadedSchematic loaded) {
+        ServerPlayerEntity player = requirePlayer(source);
+        if (player == null) {
+            return;
+        }
+        int desiredMinY = player.getBlockY();
+        int baseMinY = loaded.boundingBox().min().y();
+        int offsetY = desiredMinY - baseMinY;
+
+        SchematicTransform current = buildState.transform();
+        buildState.updateTransform(new SchematicTransform(
+            current.rotation(),
+            current.mirror(),
+            current.offsetX(),
+            offsetY,
+            current.offsetZ()
+        ));
+    }
+
+    private MaterialReport resolveReportForGui(ServerCommandSource source) {
+        MaterialReport cached = buildState.lastMaterialReport();
+        if (!cached.rows().isEmpty()) {
+            return cached;
+        }
+        ServerPlayerEntity player = requirePlayer(source);
+        PlacementController placement = requirePlacement(source);
+        if (player == null || placement == null) {
+            return cached;
+        }
+        Map<LoadedSchematic.BlockPosition, String> worldStates = snapshotWorldStates(player, placement);
+        MaterialAvailability availability = storage.aggregateAvailability(player.getWorld());
+        MaterialReport report = materials.analyze(placement, worldStates, availability);
+        buildState.setLastMaterialReport(report);
+        return report;
     }
 
     private Map<LoadedSchematic.BlockPosition, String> snapshotWorldStates(ServerPlayerEntity player, PlacementController placement) {

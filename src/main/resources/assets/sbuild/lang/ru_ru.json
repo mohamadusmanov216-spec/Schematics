@@ -12,7 +12,7 @@
   "command.sbuild.error.player_only": "Эта команда доступна только игроку.",
   "command.sbuild.error.no_loaded_schematic": "Схема не загружена.",
   "command.sbuild.schematic.scan.result": "Найдено схем: %s в %s",
-  "command.sbuild.schematic.list.empty": "Файлы .litematic не найдены.",
+  "command.sbuild.schematic.list.empty": "Файлы схем (.litematic/.schem/.schematic) не найдены.",
   "command.sbuild.schematic.list.header": "Найденные схемы: %s",
   "command.sbuild.schematic.list.entry": "- %s",
   "command.sbuild.schematic.load.success": "Схема загружена: %s (блоков=%s)",

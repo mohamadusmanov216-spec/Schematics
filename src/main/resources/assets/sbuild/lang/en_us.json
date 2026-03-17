@@ -12,7 +12,7 @@
   "command.sbuild.error.player_only": "This command can only be used by a player.",
   "command.sbuild.error.no_loaded_schematic": "No schematic is loaded.",
   "command.sbuild.schematic.scan.result": "Found %s schematics in %s",
-  "command.sbuild.schematic.list.empty": "No .litematic files found.",
+  "command.sbuild.schematic.list.empty": "Файлы схем (.litematic/.schem/.schematic) не найдены.",
   "command.sbuild.schematic.list.header": "Найденные схемы: %s",
   "command.sbuild.schematic.list.entry": "- %s",
   "command.sbuild.schematic.load.success": "Loaded schematic: %s (blocks=%s)",

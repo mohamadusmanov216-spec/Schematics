@@ -159,7 +159,8 @@ public final class SchematicRepository {
     }
 
     private boolean isSupportedSchematic(Path path) {
-        return path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".litematic");
+        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        return name.endsWith(".litematic") || name.endsWith(".schem") || name.endsWith(".schematic");
     }
 
     private static Path defaultRootDirectory() {

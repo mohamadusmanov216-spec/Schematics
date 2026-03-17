@@ -41,7 +41,10 @@ public final class AiApiClient {
     }
 
     public boolean isConfigured() {
-        return apiKey != null && !apiKey.isBlank();
+        if (apiKey != null && !apiKey.isBlank()) {
+            return true;
+        }
+        return endpoints.stream().anyMatch(uri -> uri.toString().contains("workers.dev"));
     }
 
     public Optional<String> askInRussian(String query, String stateSummary) {
@@ -60,20 +63,25 @@ public final class AiApiClient {
     }
 
     private Optional<String> send(String payload, URI endpoint) {
-        HttpRequest request = HttpRequest.newBuilder(endpoint)
+        HttpRequest.Builder builder = HttpRequest.newBuilder(endpoint)
             .timeout(TIMEOUT)
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
-            .header("X-SBuild-AI-Key", apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+            .header("Content-Type", "application/json");
+        if (apiKey != null && !apiKey.isBlank()) {
+            builder.header("Authorization", "Bearer " + apiKey);
+            builder.header("X-SBuild-AI-Key", apiKey);
+        }
+        HttpRequest request = builder.POST(HttpRequest.BodyPublishers.ofString(payload)).build();
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 return Optional.empty();
             }
-            return extractContent(response.body());
+            try {
+                return extractContent(response.body());
+            } catch (RuntimeException ignored) {
+                return Optional.empty();
+            }
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
             return Optional.empty();

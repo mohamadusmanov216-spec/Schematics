@@ -24,6 +24,10 @@ public final class AiService {
         this.apiClient = apiClient;
     }
 
+    public boolean isApiEnabled() {
+        return apiClient.isConfigured();
+    }
+
     public AssistantReply respond(String rawQuery, BuildStateService state, StorageService storageService) {
         String query = normalize(rawQuery);
         LoadedSchematic loaded = state.loadedSchematic().orElse(null);

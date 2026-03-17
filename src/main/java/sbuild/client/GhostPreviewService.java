@@ -19,13 +19,14 @@ import java.util.Map;
  * Solid ghost preview renderer.
  */
 public final class GhostPreviewService {
-    private static final int MAX_BLOCKS_PER_FRAME = 350;
+    private static final int MAX_BLOCKS_PER_FRAME = 900;
+    private static final int MAX_RENDER_DISTANCE_SQ = 128 * 128;
 
     private GhostPreviewService() {
     }
 
     public static void register(BuildStateService buildState) {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> render(context, buildState));
+        WorldRenderEvents.LAST.register(context -> render(context, buildState));
     }
 
     private static void render(WorldRenderContext context, BuildStateService buildState) {
@@ -66,41 +67,18 @@ public final class GhostPreviewService {
                     break;
                 }
                 LoadedSchematic.BlockPosition pos = entry.getKey();
-                if (client.player.getBlockPos().getSquaredDistance(pos.x(), pos.y(), pos.z()) > 56 * 56) {
+                if (client.player.getBlockPos().getSquaredDistance(pos.x(), pos.y(), pos.z()) > MAX_RENDER_DISTANCE_SQ) {
                     continue;
                 }
 
-                float[] color = colorForBlock(pos);
                 VertexRendering.drawBox(matrices, lines,
                     pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
                     pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,
-                    color[0], color[1], color[2], 0.95f);
+                    0.20f, 0.90f, 1.00f, 1.00f);
                 rendered++;
             }
         } finally {
             matrices.pop();
         }
-    }
-
-    private static float[] colorForBlock(LoadedSchematic.BlockPosition pos) {
-        int seed = Math.abs((pos.x() * 734287 + pos.y() * 912271 + pos.z() * 438289));
-        float hue = (seed % 360) / 360.0f;
-        return hsvToRgb(hue, 0.45f, 1.0f);
-    }
-
-    private static float[] hsvToRgb(float h, float s, float v) {
-        int i = (int) (h * 6.0f);
-        float f = h * 6.0f - i;
-        float p = v * (1.0f - s);
-        float q = v * (1.0f - f * s);
-        float t = v * (1.0f - (1.0f - f) * s);
-        return switch (i % 6) {
-            case 0 -> new float[]{v, t, p};
-            case 1 -> new float[]{q, v, p};
-            case 2 -> new float[]{p, v, t};
-            case 3 -> new float[]{p, q, v};
-            case 4 -> new float[]{t, p, v};
-            default -> new float[]{v, p, q};
-        };
     }
 }

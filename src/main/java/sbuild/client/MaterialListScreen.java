@@ -18,7 +18,8 @@ public final class MaterialListScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // Avoid Screen#applyBlur double-call crashes on some Fabric screen pipelines.
+        context.fill(0, 0, width, height, 0xA0101010);
 
         int left = 12;
         int top = 12;

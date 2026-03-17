@@ -43,44 +43,43 @@ public final class GhostPreviewService {
             return;
         }
 
-        Vec3d camera = context.camera().getPos();
         MatrixStack matrices = context.matrixStack();
         if (matrices == null) {
             return;
         }
-        matrices.push();
-        matrices.translate(-camera.x, -camera.y, -camera.z);
 
         VertexConsumerProvider consumers = context.consumers();
         if (consumers == null) {
             return;
         }
-        VertexConsumer fill = consumers.getBuffer(RenderLayer.getDebugFilledBox());
+
+        Vec3d camera = context.camera().getPos();
+        matrices.push();
+        matrices.translate(-camera.x, -camera.y, -camera.z);
+
         VertexConsumer lines = consumers.getBuffer(RenderLayer.getLines());
 
-        int rendered = 0;
-        for (Map.Entry<LoadedSchematic.BlockPosition, ?> entry : placement.transformedEntries()) {
-            if (rendered >= MAX_BLOCKS_PER_FRAME) {
-                break;
-            }
-            LoadedSchematic.BlockPosition pos = entry.getKey();
-            if (client.player.getBlockPos().getSquaredDistance(pos.x(), pos.y(), pos.z()) > 56 * 56) {
-                continue;
-            }
+        try {
+            int rendered = 0;
+            for (Map.Entry<LoadedSchematic.BlockPosition, ?> entry : placement.transformedEntries()) {
+                if (rendered >= MAX_BLOCKS_PER_FRAME) {
+                    break;
+                }
+                LoadedSchematic.BlockPosition pos = entry.getKey();
+                if (client.player.getBlockPos().getSquaredDistance(pos.x(), pos.y(), pos.z()) > 56 * 56) {
+                    continue;
+                }
 
-            float[] color = colorForBlock(pos);
-            VertexRendering.drawFilledBox(matrices, fill,
-                pos.x() + 0.04, pos.y() + 0.04, pos.z() + 0.04,
-                pos.x() + 0.96, pos.y() + 0.96, pos.z() + 0.96,
-                color[0], color[1], color[2], 0.22f);
-            VertexRendering.drawBox(matrices, lines,
-                pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
-                pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,
-                color[0], color[1], color[2], 0.9f);
-            rendered++;
+                float[] color = colorForBlock(pos);
+                VertexRendering.drawBox(matrices, lines,
+                    pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
+                    pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,
+                    color[0], color[1], color[2], 0.95f);
+                rendered++;
+            }
+        } finally {
+            matrices.pop();
         }
-
-        matrices.pop();
     }
 
     private static float[] colorForBlock(LoadedSchematic.BlockPosition pos) {

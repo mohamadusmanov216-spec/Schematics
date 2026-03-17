@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "sbuild",
+  "version": "${version}",
+  "name": "SBuild",
+  "description": "Architectural base for schematic-driven AI-assisted building.",
+  "authors": [
+    "Star_Team"
+  ],
+  "license": "SBuild-Proprietary-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "sbuild.SBuildMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.13",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

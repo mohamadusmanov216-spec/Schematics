@@ -11,8 +11,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
 import sbuild.schematic.LoadedSchematic;
 import sbuild.schematic.PlacementController;
+import sbuild.schematic.SchematicBlockState;
 import sbuild.state.BuildStateService;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -62,7 +64,7 @@ public final class GhostPreviewService {
 
         try {
             int rendered = 0;
-            for (Map.Entry<LoadedSchematic.BlockPosition, ?> entry : placement.transformedEntries()) {
+            for (Map.Entry<LoadedSchematic.BlockPosition, SchematicBlockState> entry : placement.transformedEntries()) {
                 if (rendered >= MAX_BLOCKS_PER_FRAME) {
                     break;
                 }
@@ -71,14 +73,48 @@ public final class GhostPreviewService {
                     continue;
                 }
 
+                float[] color = colorForState(entry.getValue());
                 VertexRendering.drawBox(matrices, lines,
                     pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
                     pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,
-                    0.20f, 0.90f, 1.00f, 1.00f);
+                    color[0], color[1], color[2], 1.00f);
                 rendered++;
             }
         } finally {
             matrices.pop();
         }
+    }
+
+    private static float[] colorForState(SchematicBlockState state) {
+        if (state == null || state.isAir()) {
+            return new float[]{0.30f, 0.75f, 1.00f};
+        }
+
+        String block = state.blockName().toLowerCase(Locale.ROOT);
+        if (block.contains("redstone") || block.contains("repeater") || block.contains("comparator") || block.contains("observer")) {
+            return new float[]{1.00f, 0.25f, 0.25f};
+        }
+        if (block.contains("water") || block.contains("ice")) {
+            return new float[]{0.35f, 0.65f, 1.00f};
+        }
+        if (block.contains("lava") || block.contains("magma") || block.contains("fire")) {
+            return new float[]{1.00f, 0.45f, 0.12f};
+        }
+        if (block.contains("glass")) {
+            return new float[]{0.45f, 0.95f, 1.00f};
+        }
+        if (block.contains("leaf") || block.contains("moss") || block.contains("grass") || block.contains("vine")) {
+            return new float[]{0.35f, 0.95f, 0.35f};
+        }
+        if (block.contains("log") || block.contains("wood") || block.contains("plank")) {
+            return new float[]{0.74f, 0.54f, 0.31f};
+        }
+        if (block.contains("deepslate") || block.contains("stone") || block.contains("cobblestone") || block.contains("brick")) {
+            return new float[]{0.68f, 0.78f, 1.00f};
+        }
+        if (block.contains("ore") || block.contains("iron") || block.contains("gold") || block.contains("diamond")) {
+            return new float[]{1.00f, 0.87f, 0.35f};
+        }
+        return new float[]{0.25f, 0.85f, 1.00f};
     }
 }

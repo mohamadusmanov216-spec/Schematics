@@ -82,6 +82,10 @@ public final class SBuildCommandHandler {
 
     public int handleAiHelp(CommandContext<ServerCommandSource> ctx, String query) {
         AiService.AssistantReply reply = aiService.respond(query, buildState, storage);
+        if (reply.isRaw()) {
+            sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.literal(reply.rawText())));
+            return 1;
+        }
         sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.translatable(reply.key(), reply.args())));
         return 1;
     }

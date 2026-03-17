@@ -8,8 +8,6 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import sbuild.SBuildClientMod;
@@ -142,10 +140,7 @@ public final class SBuildCommandHandler {
             }
         });
 
-        Text clickablePath = Text.literal(root.toString()).setStyle(Style.EMPTY
-            .withUnderlined(true)
-            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, root.toString())));
-        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.storage.opened", clickablePath));
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.storage.opened", root.toString()));
         return 1;
     }
 

@@ -3,7 +3,7 @@
 > **Fabric-мод для Minecraft 1.21.8** для автоматизированного строительства по схематикам.
 
 SBuild — это архитектурная база для будущего AI-бота строителя:
-- загрузка `.litematic` схем,
+- загрузка `.litematic` / `.schem` / `.schematic` схем,
 - анализ материалов,
 - работа с сундуками-хранилищами,
 - стратегии установки сложных блоков,
@@ -43,6 +43,39 @@ SBuild — это архитектурная база для будущего AI
 Это всё ещё pragmatic-engine, а не «идеальный final domain engine», но архитектура уже заметно более предсказуема для тонких комбинаций и регрессий.
 
 ---
+
+
+## 🤖 AI API и формат команд
+
+Теперь AI может работать через внешний OpenAI-совместимый API. По умолчанию запросы идут через Cloudflare Worker proxy для обхода региональных ограничений.
+
+- Команды можно писать как через `/`, так и через точку: `.sbuild status`, `.ai_help как загрузить схему`
+- Для API-режима можно указать ключ (если ваш proxy его требует):
+  - `SBUILD_AI_API_KEY=<key>` (переменная окружения)
+  - или `-Dsbuild.ai.api.key=<key>` (JVM property)
+- Опционально можно переопределить:
+  - `SBUILD_AI_API_URL` / `-Dsbuild.ai.api.url` (если нужно заменить дефолтный proxy endpoint)
+  - `SBUILD_AI_DIRECT_FALLBACK` / `-Dsbuild.ai.api.direct_fallback` (опциональный прямой fallback URL)
+  - `SBUILD_AI_MODEL` / `-Dsbuild.ai.model`
+
+Дефолтный endpoint: `https://star-proxy-bridge.mohamadusmanov216.workers.dev`
+
+Если ключ не задан, но proxy принимает анонимные запросы, AI всё равно будет работать через proxy.
+Если proxy/API недоступен, мод использует локальный fallback-ассистент.
+
+Также добавлен HUD-оверлей SBuild (схема/склады/состояние AI proxy).
+
+---
+
+
+## 🤖 Быстрый старт (бот + призрачная схема)
+
+1. Загрузи схему: `.sbuild schematic load <name>`
+2. Включи ghost preview: `.sbuild ghost on`
+3. Проверь материалы: `.sbuild materials report`
+4. Открой GUI материалов: `.sbuild materials gui`
+5. Запусти бота: `.sbuild bot start`
+6. Стоп бота: `.sbuild bot stop`
 
 ## 🧩 Технологии
 

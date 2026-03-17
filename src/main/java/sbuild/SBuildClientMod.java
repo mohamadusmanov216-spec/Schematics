@@ -6,6 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sbuild.ai.AiService;
 import sbuild.bot.BuildBotService;
+import sbuild.client.GhostPreviewService;
+import sbuild.client.SBuildHudOverlay;
+import sbuild.command.DotCommandBridge;
 import sbuild.command.SBuildCommand;
 import sbuild.command.SBuildCommandHandler;
 import sbuild.materials.MaterialAnalysisService;
@@ -37,12 +40,16 @@ public final class SBuildClientMod implements ClientModInitializer {
             materials,
             storage,
             planner,
-            ai
+            ai,
+            buildBotService
         );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             SBuildCommand.register(dispatcher, handler)
         );
+        DotCommandBridge.register();
+        SBuildHudOverlay.register(buildState, storage, ai);
+        GhostPreviewService.register(buildState);
 
         buildBotService.initialize();
 

@@ -1,11 +1,15 @@
 package sbuild.command;
 
 import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import sbuild.SBuildClientMod;
 import sbuild.ai.AiService;
+import sbuild.bot.BuildBotService;
+import sbuild.client.MaterialListScreen;
 import sbuild.materials.MaterialAnalysisService;
 import sbuild.materials.MaterialAvailability;
 import sbuild.materials.MaterialReport;
@@ -34,6 +38,7 @@ public final class SBuildCommandHandler {
     private final StorageService storage;
     private final BuildPlannerService planner;
     private final AiService aiService;
+    private final BuildBotService buildBotService;
 
     public SBuildCommandHandler(
         BuildStateService buildState,
@@ -42,7 +47,8 @@ public final class SBuildCommandHandler {
         MaterialAnalysisService materials,
         StorageService storage,
         BuildPlannerService planner,
-        AiService aiService
+        AiService aiService,
+        BuildBotService buildBotService
     ) {
         this.buildState = buildState;
         this.schematics = schematics;
@@ -51,6 +57,7 @@ public final class SBuildCommandHandler {
         this.storage = storage;
         this.planner = planner;
         this.aiService = aiService;
+        this.buildBotService = buildBotService;
     }
 
     public int handleRoot(CommandContext<ServerCommandSource> ctx) {
@@ -74,6 +81,8 @@ public final class SBuildCommandHandler {
             Text.translatable("command.sbuild.help.materials"),
             Text.translatable("command.sbuild.help.chest"),
             Text.translatable("command.sbuild.help.planner"),
+            Text.translatable("command.sbuild.help.bot"),
+            Text.translatable("command.sbuild.help.ghost"),
             Text.translatable("command.sbuild.help.ai")
         );
         lines.forEach(line -> sendInfo(source, line));
@@ -82,6 +91,10 @@ public final class SBuildCommandHandler {
 
     public int handleAiHelp(CommandContext<ServerCommandSource> ctx, String query) {
         AiService.AssistantReply reply = aiService.respond(query, buildState, storage);
+        if (reply.isRaw()) {
+            sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.literal(reply.rawText())));
+            return 1;
+        }
         sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.translatable(reply.key(), reply.args())));
         return 1;
     }
@@ -107,16 +120,23 @@ public final class SBuildCommandHandler {
     }
 
     public int handleSchematicLoad(CommandContext<ServerCommandSource> ctx, String name) {
-        return schematics.loadByName(name)
-            .map(loaded -> {
-                buildState.setLoadedSchematic(loaded);
-                sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.success", loaded.name(), loaded.blockCount()));
-                return 1;
-            })
-            .orElseGet(() -> {
-                sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.not_found", name));
-                return 0;
-            });
+        try {
+            return schematics.loadByName(name)
+                .map(loaded -> {
+                    buildState.setLoadedSchematic(loaded);
+                    sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.success", loaded.name(), loaded.blockCount()));
+                    return 1;
+                })
+                .orElseGet(() -> {
+                    sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.not_found", name));
+                    return 0;
+                });
+        } catch (Exception e) {
+            SBuildClientMod.LOGGER.error("Failed to load schematic '{}'", name, e);
+            String reason = extractSafeReason(e);
+            sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.failed", name, reason));
+            return 0;
+        }
     }
 
     public int handleSchematicInfo(CommandContext<ServerCommandSource> ctx) {
@@ -151,6 +171,7 @@ public final class SBuildCommandHandler {
         Map<LoadedSchematic.BlockPosition, String> worldStates = snapshotWorldStates(player, placement);
         MaterialAvailability availability = storage.aggregateAvailability(player.getWorld());
         MaterialReport report = materials.analyze(placement, worldStates, availability);
+        buildState.setLastMaterialReport(report);
 
         sendInfo(source, Text.translatable(
             "command.sbuild.materials.report.summary",
@@ -167,6 +188,18 @@ public final class SBuildCommandHandler {
         if (rows.size() > MATERIAL_ROWS_PREVIEW) {
             sendInfo(source, Text.translatable("command.sbuild.preview.truncated", rows.size() - MATERIAL_ROWS_PREVIEW));
         }
+        return 1;
+    }
+
+    public int handleMaterialsGui(CommandContext<ServerCommandSource> ctx) {
+        MaterialReport report = buildState.lastMaterialReport();
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) {
+            sendError(ctx.getSource(), Text.literal("Клиент Minecraft недоступен."));
+            return 0;
+        }
+        client.execute(() -> client.setScreen(new MaterialListScreen(report)));
+        sendInfo(ctx.getSource(), Text.literal("Открыт GUI материалов."));
         return 1;
     }
 
@@ -225,6 +258,44 @@ public final class SBuildCommandHandler {
         return 1;
     }
 
+    public int handleBotStart(CommandContext<ServerCommandSource> ctx) {
+        if (buildState.loadedSchematic().isEmpty()) {
+            sendError(ctx.getSource(), Text.translatable("command.sbuild.error.no_loaded_schematic"));
+            return 0;
+        }
+        buildBotService.start();
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.started"));
+        return 1;
+    }
+
+    public int handleBotStop(CommandContext<ServerCommandSource> ctx) {
+        buildBotService.stop();
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.stopped"));
+        return 1;
+    }
+
+    public int handleBotStatus(CommandContext<ServerCommandSource> ctx) {
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.status", buildBotService.isRunning() ? "ON" : "OFF"));
+        return 1;
+    }
+
+    public int handleGhostOn(CommandContext<ServerCommandSource> ctx) {
+        buildState.setGhostEnabled(true);
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.on"));
+        return 1;
+    }
+
+    public int handleGhostOff(CommandContext<ServerCommandSource> ctx) {
+        buildState.setGhostEnabled(false);
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.off"));
+        return 1;
+    }
+
+    public int handleGhostStatus(CommandContext<ServerCommandSource> ctx) {
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.status", buildState.isGhostEnabled() ? "ON" : "OFF"));
+        return 1;
+    }
+
     private PlacementController requirePlacement(ServerCommandSource source) {
         PlacementController placement = buildState.placement().orElse(null);
         if (placement == null) {
@@ -247,6 +318,24 @@ public final class SBuildCommandHandler {
             sendError(source, Text.translatable("command.sbuild.error.player_only"));
             return null;
         }
+    }
+
+
+    private String extractSafeReason(Throwable error) {
+        if (error == null) {
+            return "unknown";
+        }
+        String message = error.getMessage();
+        if (message == null || message.isBlank()) {
+            Throwable cause = error.getCause();
+            if (cause != null && cause.getMessage() != null && !cause.getMessage().isBlank()) {
+                message = cause.getMessage();
+            }
+        }
+        if (message == null || message.isBlank()) {
+            return "unknown";
+        }
+        return message.length() > 160 ? message.substring(0, 160) + "..." : message;
     }
 
     private String formatPos(StoragePoint point) {

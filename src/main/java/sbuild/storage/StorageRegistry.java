@@ -15,6 +15,7 @@ public final class StorageRegistry {
     private final ConcurrentMap<String, StoragePoint> byName = new ConcurrentHashMap<>();
 
     public StoragePoint register(StoragePoint point) {
+        byName.entrySet().removeIf(entry -> entry.getValue().blockPos().equals(point.blockPos()));
         byName.put(point.name(), point);
         return point;
     }

@@ -37,7 +37,7 @@ final class LitematicParser {
             }
 
             Map<String, String> metadata = readMetadata(rootMap.get("Metadata"));
-            List<RegionModel> regions = extractRegions(rootMap.get("Regions"));
+            List<RegionModel> regions = extractRegions(rootMap);
 
             ParseAccumulator acc = new ParseAccumulator();
             for (RegionModel region : regions) {
@@ -56,32 +56,64 @@ final class LitematicParser {
             );
     }
 
-    List<RegionModel> extractRegions(Object regionsRaw) {
-        if (!(regionsRaw instanceof Map<?, ?> regionsMap) || regionsMap.isEmpty()) {
-            throw new IllegalArgumentException("Litematic has no regions");
-        }
-
-        List<RegionModel> regions = new ArrayList<>();
-        for (Map.Entry<?, ?> regionEntry : regionsMap.entrySet()) {
-            if (!(regionEntry.getValue() instanceof Map<?, ?> regionRaw)) {
-                continue;
+    List<RegionModel> extractRegions(Map<?, ?> rootMap) {
+        Object regionsRaw = getIgnoreCase(rootMap, "Regions");
+        if (regionsRaw instanceof Map<?, ?> regionsMap && !regionsMap.isEmpty()) {
+            List<RegionModel> regions = new ArrayList<>();
+            for (Map.Entry<?, ?> regionEntry : regionsMap.entrySet()) {
+                if (!(regionEntry.getValue() instanceof Map<?, ?> regionRaw)) {
+                    continue;
+                }
+                regions.add(readRegionModel(regionEntry.getKey(), regionRaw));
             }
-            regions.add(readRegionModel(regionEntry.getKey(), regionRaw));
+            if (!regions.isEmpty()) {
+                return List.copyOf(regions);
+            }
         }
 
-        if (regions.isEmpty()) {
-            throw new IllegalArgumentException("Litematic regions are malformed");
+        Map<String, Object> syntheticRegion = readSyntheticSingleRegion(rootMap);
+        if (syntheticRegion != null) {
+            return List.of(readRegionModel("main", syntheticRegion));
         }
 
-        return List.copyOf(regions);
+        throw new IllegalArgumentException("Формат схемы не поддерживается: не найдены данные Regions/Position/Size/Palette");
+    }
+
+    private Map<String, Object> readSyntheticSingleRegion(Map<?, ?> rootMap) {
+        Object position = getIgnoreCase(rootMap, "Position");
+        Object size = getIgnoreCase(rootMap, "Size");
+        Object palette = getIgnoreCase(rootMap, "BlockStatePalette");
+        Object states = getIgnoreCase(rootMap, "BlockStates");
+        if (position == null || size == null || palette == null || states == null) {
+            return null;
+        }
+
+        Map<String, Object> region = new LinkedHashMap<>();
+        region.put("Position", position);
+        region.put("Size", size);
+        region.put("BlockStatePalette", palette);
+        region.put("BlockStates", states);
+        return region;
+    }
+
+    private Object getIgnoreCase(Map<?, ?> map, String key) {
+        if (map.containsKey(key)) {
+            return map.get(key);
+        }
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() instanceof String k && k.equalsIgnoreCase(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     RegionModel readRegionModel(Object regionName, Map<?, ?> region) {
-        Vec3 position = readVec3(region.get("Position"));
-        Vec3 size = readVec3(region.get("Size"));
+        Vec3 position = readVec3(getIgnoreCase(region, "Position"));
+        Vec3 size = readVec3(getIgnoreCase(region, "Size"));
         RegionVolume volume = RegionVolume.from(position, size);
-        PaletteModel palette = readPaletteModel(regionName, region.get("BlockStatePalette"));
-        long[] blockStates = readLongArray(region.get("BlockStates"));
+        PaletteModel palette = readPaletteModel(regionName, getIgnoreCase(region, "BlockStatePalette"));
+        long[] blockStates = readLongArray(getIgnoreCase(region, "BlockStates"));
 
         validatePackedData(regionName, volume, palette, blockStates);
         return new RegionModel(String.valueOf(regionName), volume, palette, blockStates);

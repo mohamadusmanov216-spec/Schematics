@@ -20,7 +20,8 @@ import java.util.zip.GZIPInputStream;
 final class SchemParser {
     ParseResult parse(Path path) throws IOException {
         byte[] raw = Files.readAllBytes(path);
-        Map<String, Object> root = readRootCompound(raw);
+        Map<String, Object> rawRoot = readRootCompound(raw);
+        Map<String, Object> root = unwrapRoot(rawRoot);
 
         ParseResult sponge = tryParseSponge(root);
         if (sponge != null) {
@@ -35,17 +36,36 @@ final class SchemParser {
         throw new IllegalArgumentException("Unsupported .schem/.schematic structure");
     }
 
+    private Map<String, Object> unwrapRoot(Map<String, Object> root) {
+        Object schematic = getIgnoreCase(root, "Schematic");
+        if (schematic instanceof Map<?, ?> map) {
+            return castMap(map);
+        }
+        return root;
+    }
+
     private ParseResult tryParseSponge(Map<String, Object> root) {
-        int width = asInt(root.get("Width"));
-        int height = asInt(root.get("Height"));
-        int length = asInt(root.get("Length"));
+        int width = asInt(getIgnoreCase(root, "Width"));
+        int height = asInt(getIgnoreCase(root, "Height"));
+        int length = asInt(getIgnoreCase(root, "Length"));
         if (width <= 0 || height <= 0 || length <= 0) {
             return null;
         }
 
-        Object paletteRaw = root.get("Palette");
-        Object blockDataRaw = root.get("BlockData");
-        if (!(paletteRaw instanceof Map<?, ?> paletteMap) || !(blockDataRaw instanceof byte[] blockDataBytes)) {
+        Map<String, Object> blockContainer = root;
+        Object blocksObj = getIgnoreCase(root, "Blocks");
+        if (blocksObj instanceof Map<?, ?> nested) {
+            blockContainer = castMap(nested);
+        }
+
+        Object paletteRaw = getIgnoreCase(blockContainer, "Palette");
+        Object blockDataRaw = getIgnoreCase(blockContainer, "BlockData");
+        if (blockDataRaw == null) {
+            blockDataRaw = getIgnoreCase(blockContainer, "Data");
+        }
+
+        byte[] blockDataBytes = asByteArray(blockDataRaw);
+        if (!(paletteRaw instanceof Map<?, ?> paletteMap) || blockDataBytes == null) {
             return null;
         }
 
@@ -90,15 +110,15 @@ final class SchemParser {
     }
 
     private ParseResult tryParseLegacySchematic(Map<String, Object> root) {
-        int width = asInt(root.get("Width"));
-        int height = asInt(root.get("Height"));
-        int length = asInt(root.get("Length"));
+        int width = asInt(getIgnoreCase(root, "Width"));
+        int height = asInt(getIgnoreCase(root, "Height"));
+        int length = asInt(getIgnoreCase(root, "Length"));
         if (width <= 0 || height <= 0 || length <= 0) {
             return null;
         }
 
-        byte[] blocksArr = root.get("Blocks") instanceof byte[] b ? b : null;
-        byte[] dataArr = root.get("Data") instanceof byte[] d ? d : null;
+        byte[] blocksArr = asByteArray(getIgnoreCase(root, "Blocks"));
+        byte[] dataArr = asByteArray(getIgnoreCase(root, "Data"));
         if (blocksArr == null || dataArr == null) {
             return null;
         }
@@ -196,7 +216,7 @@ final class SchemParser {
                 if (tagId != 10) {
                     throw new IllegalArgumentException("Root tag is not COMPOUND");
                 }
-                readString(data); // root name
+                readString(data);
                 return readCompound(data);
             } catch (IOException | RuntimeException e) {
                 last = e instanceof IOException io ? io : new IOException(e);
@@ -265,6 +285,50 @@ final class SchemParser {
         byte[] bytes = new byte[len];
         in.readFully(bytes);
         return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private Object getIgnoreCase(Map<String, Object> map, String key) {
+        if (map.containsKey(key)) {
+            return map.get(key);
+        }
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private byte[] asByteArray(Object value) {
+        if (value instanceof byte[] b) {
+            return b;
+        }
+        if (value instanceof int[] ints) {
+            byte[] out = new byte[ints.length];
+            for (int i = 0; i < ints.length; i++) {
+                out[i] = (byte) ints[i];
+            }
+            return out;
+        }
+        if (value instanceof List<?> list) {
+            byte[] out = new byte[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                Object item = list.get(i);
+                out[i] = (byte) (item instanceof Number n ? n.intValue() : 0);
+            }
+            return out;
+        }
+        return null;
+    }
+
+    private Map<String, Object> castMap(Map<?, ?> source) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                out.put(key, entry.getValue());
+            }
+        }
+        return out;
     }
 
     private int asInt(Object value) {

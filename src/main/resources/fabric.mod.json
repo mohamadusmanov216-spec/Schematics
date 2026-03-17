@@ -10,8 +10,8 @@
   "license": "SBuild-Proprietary-1.0",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "sbuild.SBuildMod"
+    "client": [
+      "sbuild.SBuildClientMod"
     ]
   },
   "depends": {

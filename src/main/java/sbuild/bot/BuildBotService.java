@@ -1,13 +1,24 @@
 package sbuild.bot;
 
+import sbuild.planner.BuildPlannerService;
+import sbuild.state.BuildStateService;
+import sbuild.storage.StorageService;
+import sbuild.world.WorldService;
+
 /**
  * Facade over autonomous builder runtime.
  */
 public final class BuildBotService {
     private final BotController botController;
     private final BotTickLoop botTickLoop;
+    private final BotRuntime botRuntime;
 
-    public BuildBotService() {
+    public BuildBotService(
+        BuildStateService buildState,
+        WorldService worldService,
+        BuildPlannerService planner,
+        StorageService storageService
+    ) {
         MovementController movementController = new MovementController();
         LookController lookController = new LookController();
         InventoryController inventoryController = new InventoryController();
@@ -31,10 +42,20 @@ public final class BuildBotService {
             recoveryController
         );
         this.botTickLoop = new BotTickLoop(botController);
+        this.botRuntime = new BotRuntime(
+            buildState,
+            worldService,
+            planner,
+            storageService,
+            pathExecutor,
+            placeController,
+            inventoryController
+        );
     }
 
     public void initialize() {
         botTickLoop.register();
+        botRuntime.register();
     }
 
     public BotController botController() {

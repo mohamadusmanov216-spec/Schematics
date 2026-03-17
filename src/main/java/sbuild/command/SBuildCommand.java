@@ -1,6 +1,7 @@
 package sbuild.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -24,13 +25,8 @@ public final class SBuildCommand {
                 .then(CommandManager.argument("query", StringArgumentType.greedyString())
                     .executes(ctx -> handler.handleAiHelp(ctx, StringArgumentType.getString(ctx, "query")))))
 
-            .then(CommandManager.literal("schematic")
-                .then(CommandManager.literal("scan").executes(handler::handleSchematicScan))
-                .then(CommandManager.literal("list").executes(handler::handleSchematicList))
-                .then(CommandManager.literal("info").executes(handler::handleSchematicInfo))
-                .then(CommandManager.literal("load")
-                    .then(CommandManager.argument("name", StringArgumentType.greedyString())
-                        .executes(ctx -> handler.handleSchematicLoad(ctx, StringArgumentType.getString(ctx, "name"))))))
+            .then(buildSchematicNode(handler, "schematic"))
+            .then(buildSchematicNode(handler, "shematic"))
 
             .then(CommandManager.literal("materials")
                 .executes(handler::handleMaterialsReport)
@@ -43,7 +39,6 @@ public final class SBuildCommand {
 
             .then(CommandManager.literal("planner")
                 .then(CommandManager.literal("preview").executes(handler::handlePlannerPreview)))
-
 
             .then(CommandManager.literal("bot")
                 .then(CommandManager.literal("start").executes(handler::handleBotStart))
@@ -60,5 +55,32 @@ public final class SBuildCommand {
                     .then(CommandManager.argument("name", StringArgumentType.greedyString())
                         .executes(ctx -> handler.handleChestSet(ctx, StringArgumentType.getString(ctx, "name")))))
                 .then(CommandManager.literal("list").executes(handler::handleChestList))));
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> buildSchematicNode(
+        SBuildCommandHandler handler,
+        String literal
+    ) {
+        return CommandManager.literal(literal)
+            .then(CommandManager.literal("scan").executes(handler::handleSchematicScan))
+            .then(CommandManager.literal("list").executes(handler::handleSchematicList))
+            .then(CommandManager.literal("info").executes(handler::handleSchematicInfo))
+            .then(CommandManager.literal("storage").executes(handler::handleSchematicStorage))
+            .then(CommandManager.literal("up")
+                .then(CommandManager.argument("value", IntegerArgumentType.integer(1, 256))
+                    .executes(ctx -> handler.handleSchematicShiftY(ctx, IntegerArgumentType.getInteger(ctx, "value")))))
+            .then(CommandManager.literal("down")
+                .then(CommandManager.argument("value", IntegerArgumentType.integer(1, 256))
+                    .executes(ctx -> handler.handleSchematicShiftY(ctx, -IntegerArgumentType.getInteger(ctx, "value")))))
+            .then(CommandManager.literal("left")
+                .then(CommandManager.argument("value", IntegerArgumentType.integer(1, 256))
+                    .executes(ctx -> handler.handleSchematicShiftX(ctx, -IntegerArgumentType.getInteger(ctx, "value")))))
+            .then(CommandManager.literal("right")
+                .then(CommandManager.argument("value", IntegerArgumentType.integer(1, 256))
+                    .executes(ctx -> handler.handleSchematicShiftX(ctx, IntegerArgumentType.getInteger(ctx, "value")))))
+            .then(CommandManager.literal("load")
+                .then(CommandManager.argument("name", StringArgumentType.greedyString())
+                    .suggests(handler::suggestSchematicNames)
+                    .executes(ctx -> handler.handleSchematicLoad(ctx, StringArgumentType.getString(ctx, "name")))));
     }
 }

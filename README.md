@@ -44,6 +44,29 @@ SBuild — это архитектурная база для будущего AI
 
 ---
 
+
+## 🤖 AI API и формат команд
+
+Теперь AI может работать через внешний OpenAI-совместимый API. По умолчанию запросы идут через Cloudflare Worker proxy для обхода региональных ограничений.
+
+- Команды можно писать как через `/`, так и через точку: `.sbuild status`, `.ai_help как загрузить схему`
+- Для API-режима можно указать ключ (если ваш proxy его требует):
+  - `SBUILD_AI_API_KEY=<key>` (переменная окружения)
+  - или `-Dsbuild.ai.api.key=<key>` (JVM property)
+- Опционально можно переопределить:
+  - `SBUILD_AI_API_URL` / `-Dsbuild.ai.api.url` (если нужно заменить дефолтный proxy endpoint)
+  - `SBUILD_AI_DIRECT_FALLBACK` / `-Dsbuild.ai.api.direct_fallback` (опциональный прямой fallback URL)
+  - `SBUILD_AI_MODEL` / `-Dsbuild.ai.model`
+
+Дефолтный endpoint: `https://star-proxy-bridge.mohamadusmanov216.workers.dev`
+
+Если ключ не задан, но proxy принимает анонимные запросы, AI всё равно будет работать через proxy.
+Если proxy/API недоступен, мод использует локальный fallback-ассистент.
+
+Также добавлен HUD-оверлей SBuild (схема/склады/состояние AI proxy).
+
+---
+
 ## 🧩 Технологии
 
 - **Minecraft**: `1.21.8`

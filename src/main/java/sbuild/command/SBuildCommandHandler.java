@@ -5,6 +5,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import sbuild.SBuildClientMod;
 import sbuild.ai.AiService;
 import sbuild.materials.MaterialAnalysisService;
 import sbuild.materials.MaterialAvailability;
@@ -82,6 +83,10 @@ public final class SBuildCommandHandler {
 
     public int handleAiHelp(CommandContext<ServerCommandSource> ctx, String query) {
         AiService.AssistantReply reply = aiService.respond(query, buildState, storage);
+        if (reply.isRaw()) {
+            sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.literal(reply.rawText())));
+            return 1;
+        }
         sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ai.prefix", Text.translatable(reply.key(), reply.args())));
         return 1;
     }
@@ -107,16 +112,23 @@ public final class SBuildCommandHandler {
     }
 
     public int handleSchematicLoad(CommandContext<ServerCommandSource> ctx, String name) {
-        return schematics.loadByName(name)
-            .map(loaded -> {
-                buildState.setLoadedSchematic(loaded);
-                sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.success", loaded.name(), loaded.blockCount()));
-                return 1;
-            })
-            .orElseGet(() -> {
-                sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.not_found", name));
-                return 0;
-            });
+        try {
+            return schematics.loadByName(name)
+                .map(loaded -> {
+                    buildState.setLoadedSchematic(loaded);
+                    sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.success", loaded.name(), loaded.blockCount()));
+                    return 1;
+                })
+                .orElseGet(() -> {
+                    sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.not_found", name));
+                    return 0;
+                });
+        } catch (Exception e) {
+            SBuildClientMod.LOGGER.error("Failed to load schematic '{}'", name, e);
+            String reason = extractSafeReason(e);
+            sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.load.failed", name, reason));
+            return 0;
+        }
     }
 
     public int handleSchematicInfo(CommandContext<ServerCommandSource> ctx) {
@@ -247,6 +259,24 @@ public final class SBuildCommandHandler {
             sendError(source, Text.translatable("command.sbuild.error.player_only"));
             return null;
         }
+    }
+
+
+    private String extractSafeReason(Throwable error) {
+        if (error == null) {
+            return "unknown";
+        }
+        String message = error.getMessage();
+        if (message == null || message.isBlank()) {
+            Throwable cause = error.getCause();
+            if (cause != null && cause.getMessage() != null && !cause.getMessage().isBlank()) {
+                message = cause.getMessage();
+            }
+        }
+        if (message == null || message.isBlank()) {
+            return "unknown";
+        }
+        return message.length() > 160 ? message.substring(0, 160) + "..." : message;
     }
 
     private String formatPos(StoragePoint point) {

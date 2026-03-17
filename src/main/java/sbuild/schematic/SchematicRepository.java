@@ -74,7 +74,7 @@ public final class SchematicRepository {
         }
 
         for (Path candidate : scan()) {
-            if (baseName(candidate).equalsIgnoreCase(normalized)) {
+            if (matchesName(candidate, normalized)) {
                 return Optional.of(load(candidate));
             }
         }
@@ -145,6 +145,17 @@ public final class SchematicRepository {
         String name = path.getFileName().toString();
         int dot = name.lastIndexOf('.');
         return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    private boolean matchesName(Path path, String normalized) {
+        if (normalized.isBlank()) {
+            return false;
+        }
+        String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (fileName.equals(normalized)) {
+            return true;
+        }
+        return baseName(path).equalsIgnoreCase(normalized);
     }
 
     private boolean isSupportedSchematic(Path path) {

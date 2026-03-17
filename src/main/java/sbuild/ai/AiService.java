@@ -11,19 +11,50 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Local assistant layer for /ai_help command.
- * Provides contextual hints without pretending to be a remote AI model.
+ * AI assistant layer for /ai_help and .ai_help commands.
  */
 public final class AiService {
+    private final AiApiClient apiClient;
+
+    public AiService() {
+        this(new AiApiClient());
+    }
+
+    public AiService(AiApiClient apiClient) {
+        this.apiClient = apiClient;
+    }
+
+    public boolean isApiEnabled() {
+        return apiClient.isConfigured();
+    }
+
     public AssistantReply respond(String rawQuery, BuildStateService state, StorageService storageService) {
         String query = normalize(rawQuery);
-        if (query.isBlank()) {
-            return reply("command.sbuild.ai.reply.empty_query");
-        }
-
         LoadedSchematic loaded = state.loadedSchematic().orElse(null);
         boolean hasLoadedSchematic = loaded != null;
         int storageCount = storageService.listStoragePoints().size();
+        String stateSummary = hasLoadedSchematic
+            ? "схема=" + loaded.name() + ", блоков=" + loaded.blockCount() + ", складов=" + storageCount
+            : "схема не загружена, складов=" + storageCount;
+
+        if (!query.isBlank()) {
+            String apiAnswer = apiClient.askInRussian(query, stateSummary).orElse(null);
+            if (apiAnswer != null) {
+                return AssistantReply.raw(apiAnswer);
+            }
+        }
+
+        if (query.isBlank()) {
+            if (apiClient.isConfigured()) {
+                return hasLoadedSchematic
+                    ? reply("command.sbuild.ai.reply.idle.loaded.api", loaded.name(), storageCount)
+                    : reply("command.sbuild.ai.reply.idle.no_schematic.api", storageCount);
+            }
+            return hasLoadedSchematic
+                ? reply("command.sbuild.ai.reply.idle.loaded", loaded.name(), storageCount)
+                : reply("command.sbuild.ai.reply.idle.no_schematic", storageCount);
+        }
+
         Intent intent = classify(query);
 
         return switch (intent) {
@@ -88,14 +119,21 @@ public final class AiService {
     }
 
     private AssistantReply reply(String key, Object... args) {
-        return new AssistantReply(key, args);
+        return new AssistantReply(key, args, null);
     }
 
     private String normalize(String raw) {
         return raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
     }
 
-    public record AssistantReply(String key, Object[] args) {
+    public record AssistantReply(String key, Object[] args, String rawText) {
+        public static AssistantReply raw(String text) {
+            return new AssistantReply(null, new Object[0], text);
+        }
+
+        public boolean isRaw() {
+            return rawText != null && !rawText.isBlank();
+        }
     }
 
     private enum Intent {

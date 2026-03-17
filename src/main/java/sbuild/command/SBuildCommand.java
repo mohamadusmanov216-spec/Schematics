@@ -28,8 +28,10 @@ public final class SBuildCommand {
                 .then(CommandManager.literal("scan").executes(handler::handleSchematicScan))
                 .then(CommandManager.literal("list").executes(handler::handleSchematicList))
                 .then(CommandManager.literal("info").executes(handler::handleSchematicInfo))
+                .then(CommandManager.literal("storage").executes(handler::handleSchematicStorage))
                 .then(CommandManager.literal("load")
                     .then(CommandManager.argument("name", StringArgumentType.greedyString())
+                         .suggests(handler::suggestSchematicNames)
                         .executes(ctx -> handler.handleSchematicLoad(ctx, StringArgumentType.getString(ctx, "name"))))))
 
             .then(CommandManager.literal("materials")

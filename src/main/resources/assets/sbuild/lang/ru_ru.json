@@ -4,7 +4,7 @@
   "command.sbuild.status.summary": "Статус: схема=%s, блоков=%s",
   "command.sbuild.help.header": "Команды SBuild:",
   "command.sbuild.help.status": ".sbuild status",
-  "command.sbuild.help.schematic": ".sbuild schematic scan|list|load <name>|info",
+  "command.sbuild.help.schematic": ".sbuild schematic scan|list|load <name>|info|storage",
   "command.sbuild.help.materials": ".sbuild materials|material [report|gui]",
   "command.sbuild.help.chest": ".sbuild chest set [name]|list",
   "command.sbuild.help.planner": ".sbuild planner preview",
@@ -61,5 +61,8 @@
   "command.sbuild.ghost.status": "Состояние ghost-preview (цельные блоки): %s",
   "command.sbuild.ai.reply.bot.ready": "Бот готов. Запусти: .sbuild bot start. Остановить: .sbuild bot stop.",
   "command.sbuild.ai.reply.bot.no_schematic": "Сначала загрузи схему, потом запусти бота: .sbuild bot start.",
-  "command.sbuild.ai.reply.ghost.help": "Призрачная схема (цельные блоки): .sbuild ghost on|off|status. GUI материалов: .sbuild materials gui. Для бота: .sbuild bot start."
+  "command.sbuild.ai.reply.ghost.help": "Призрачная схема (цельные блоки): .sbuild ghost on|off|status. GUI материалов: .sbuild materials gui. Для бота: .sbuild bot start.",
+  "command.sbuild.help.schematic.storage": ".sbuild schematic storage (открыть папку со схематиками)",
+  "command.sbuild.schematic.storage.opened": "Открыл папку схематик: %s",
+  "command.sbuild.schematic.storage.unavailable": "Не удалось открыть проводник автоматически. Папка схематик: %s"
 }

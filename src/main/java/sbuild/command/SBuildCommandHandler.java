@@ -1,11 +1,17 @@
 package sbuild.command;
 
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 import sbuild.SBuildClientMod;
 import sbuild.ai.AiService;
 import sbuild.bot.BuildBotService;
@@ -25,6 +31,7 @@ import sbuild.world.WorldService;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.Map;
 
 public final class SBuildCommandHandler {
@@ -78,6 +85,7 @@ public final class SBuildCommandHandler {
         List<Text> lines = List.of(
             Text.translatable("command.sbuild.help.status"),
             Text.translatable("command.sbuild.help.schematic"),
+            Text.translatable("command.sbuild.help.schematic.storage"),
             Text.translatable("command.sbuild.help.materials"),
             Text.translatable("command.sbuild.help.chest"),
             Text.translatable("command.sbuild.help.planner"),
@@ -117,6 +125,36 @@ public final class SBuildCommandHandler {
             sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.list.entry", path.getFileName().toString()));
         }
         return 1;
+    }
+
+    public int handleSchematicStorage(CommandContext<ServerCommandSource> ctx) {
+        Path root = schematics.rootDirectory();
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) {
+            sendError(ctx.getSource(), Text.translatable("command.sbuild.schematic.storage.unavailable", root.toString()));
+            return 0;
+        }
+        client.execute(() -> {
+            try {
+                Util.getOperatingSystem().open(root.toFile());
+            } catch (Exception e) {
+                SBuildClientMod.LOGGER.warn("Failed to open schematic storage folder {}", root, e);
+            }
+        });
+
+        Text clickablePath = Text.literal(root.toString()).setStyle(Style.EMPTY
+            .withUnderlined(true)
+            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, root.toString())));
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.schematic.storage.opened", clickablePath));
+        return 1;
+    }
+
+    public CompletableFuture<Suggestions> suggestSchematicNames(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
+        List<String> names = schematics.scanSchematics().stream()
+            .map(path -> path.getFileName() == null ? "" : path.getFileName().toString())
+            .filter(name -> !name.isBlank())
+            .toList();
+        return CommandSource.suggestMatching(names, builder);
     }
 
     public int handleSchematicLoad(CommandContext<ServerCommandSource> ctx, String name) {

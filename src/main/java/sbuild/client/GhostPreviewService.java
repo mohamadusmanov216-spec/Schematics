@@ -6,7 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
 import sbuild.schematic.LoadedSchematic;
@@ -63,11 +63,11 @@ public final class GhostPreviewService {
             }
 
             float[] color = colorForBlock(pos);
-            WorldRenderer.renderFilledBox(matrices, fill,
+            VertexRendering.drawFilledBox(matrices, fill,
                 pos.x() + 0.04, pos.y() + 0.04, pos.z() + 0.04,
                 pos.x() + 0.96, pos.y() + 0.96, pos.z() + 0.96,
                 color[0], color[1], color[2], 0.22f);
-            WorldRenderer.drawBox(matrices, lines,
+            VertexRendering.drawBox(matrices, lines,
                 pos.x() + 0.02, pos.y() + 0.02, pos.z() + 0.02,
                 pos.x() + 0.98, pos.y() + 0.98, pos.z() + 0.98,
                 color[0], color[1], color[2], 0.9f);

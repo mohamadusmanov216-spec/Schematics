@@ -48,7 +48,10 @@ public final class GhostPreviewService {
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
+        VertexConsumerProvider consumers = context.consumers();
+        if (consumers == null) {
+            consumers = client.getBufferBuilders().getEntityVertexConsumers();
+        }
         VertexConsumer fill = consumers.getBuffer(RenderLayer.getDebugFilledBox());
         VertexConsumer lines = consumers.getBuffer(RenderLayer.getLines());
 
@@ -74,7 +77,6 @@ public final class GhostPreviewService {
             rendered++;
         }
 
-        consumers.draw();
         matrices.pop();
     }
 

@@ -45,12 +45,15 @@ public final class GhostPreviewService {
 
         Vec3d camera = context.camera().getPos();
         MatrixStack matrices = context.matrixStack();
+        if (matrices == null) {
+            return;
+        }
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
         VertexConsumerProvider consumers = context.consumers();
         if (consumers == null) {
-            consumers = client.getBufferBuilders().getEntityVertexConsumers();
+            return;
         }
         VertexConsumer fill = consumers.getBuffer(RenderLayer.getDebugFilledBox());
         VertexConsumer lines = consumers.getBuffer(RenderLayer.getLines());

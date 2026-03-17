@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sbuild.ai.AiService;
+import sbuild.bot.BuildBotService;
 import sbuild.command.SBuildCommand;
 import sbuild.command.SBuildCommandHandler;
 import sbuild.materials.MaterialAnalysisService;
@@ -27,6 +28,7 @@ public final class SBuildMod implements ModInitializer {
         StorageService storage = new StorageService();
         BuildPlannerService planner = new BuildPlannerService();
         AiService ai = new AiService();
+        BuildBotService buildBotService = new BuildBotService(buildState, world, planner, storage);
 
         SBuildCommandHandler handler = new SBuildCommandHandler(
             buildState,
@@ -41,6 +43,8 @@ public final class SBuildMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             SBuildCommand.register(dispatcher, handler)
         );
+
+        buildBotService.initialize();
 
         LOGGER.info("SBuild initialized.");
     }

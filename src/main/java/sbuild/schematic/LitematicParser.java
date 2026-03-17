@@ -1,8 +1,10 @@
 package sbuild.schematic;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -14,11 +16,22 @@ import java.util.zip.GZIPInputStream;
 
 final class LitematicParser {
     ParseResult parse(Path path) throws IOException {
+        byte[] nbtPayload;
         try (InputStream fileInput = Files.newInputStream(path);
-             InputStream gzipInput = new GZIPInputStream(fileInput);
-             DataInputStream input = new DataInputStream(gzipInput)) {
+             InputStream gzipInput = new GZIPInputStream(fileInput)) {
+            nbtPayload = gzipInput.readAllBytes();
+        }
 
-            NbtTag root = readNamedTag(input);
+        try {
+            return parseNbtPayload(path, nbtPayload, ByteOrder.LITTLE_ENDIAN);
+        } catch (RuntimeException | IOException littleEndianError) {
+            return parseNbtPayload(path, nbtPayload, ByteOrder.BIG_ENDIAN);
+        }
+    }
+
+    private ParseResult parseNbtPayload(Path path, byte[] nbtPayload, ByteOrder byteOrder) throws IOException {
+        NbtInput input = new NbtInput(nbtPayload, byteOrder);
+        NbtTag root = readNamedTag(input);
             if (root.type() != NbtType.COMPOUND || !(root.value() instanceof Map<?, ?> rootMap)) {
                 throw new IllegalArgumentException("Invalid litematic root for " + path.getFileName());
             }
@@ -41,7 +54,6 @@ final class LitematicParser {
                 metadata,
                 new LoadedSchematic.SchematicStats(acc.regionCount, acc.paletteEntries, acc.airBlocks, acc.blocks.size())
             );
-        }
     }
 
     List<RegionModel> extractRegions(Object regionsRaw) {
@@ -129,7 +141,7 @@ final class LitematicParser {
         if (packedBits < 0 || packedBits > (long) Integer.MAX_VALUE * 64L) {
             throw new IllegalArgumentException("Region is too large to decode safely: " + regionName);
         }
-        int requiredLongs = (int) ((packedBits + 63L) / 64L);
+        int requiredLongs = (int) ((packedBits + 63L) >>> 6);
         if (blockStates.length < requiredLongs) {
             throw new IllegalArgumentException("Region has truncated block states: " + regionName);
         }
@@ -191,18 +203,18 @@ final class LitematicParser {
         return value instanceof Number number ? number.intValue() : 0;
     }
 
-    private NbtTag readNamedTag(DataInputStream in) throws IOException {
+    private NbtTag readNamedTag(NbtInput in) throws IOException {
         byte typeId = in.readByte();
         if (typeId == 0) {
             return new NbtTag(NbtType.END, "", null);
         }
         NbtType type = NbtType.fromId(typeId);
-        String name = in.readUTF();
+        String name = in.readString();
         Object payload = readPayload(in, type);
         return new NbtTag(type, name, payload);
     }
 
-    private Object readPayload(DataInputStream in, NbtType type) throws IOException {
+    private Object readPayload(NbtInput in, NbtType type) throws IOException {
         return switch (type) {
             case END -> null;
             case BYTE -> in.readByte();
@@ -217,7 +229,7 @@ final class LitematicParser {
                 in.readFully(data);
                 yield data;
             }
-            case STRING -> in.readUTF();
+            case STRING -> in.readString();
             case LIST -> readList(in);
             case COMPOUND -> readCompound(in);
             case INT_ARRAY -> {
@@ -239,7 +251,7 @@ final class LitematicParser {
         };
     }
 
-    private List<Object> readList(DataInputStream in) throws IOException {
+    private List<Object> readList(NbtInput in) throws IOException {
         NbtType elementType = NbtType.fromId(in.readByte());
         int len = in.readInt();
         List<Object> out = new ArrayList<>(Math.max(0, len));
@@ -249,7 +261,7 @@ final class LitematicParser {
         return out;
     }
 
-    private Map<String, Object> readCompound(DataInputStream in) throws IOException {
+    private Map<String, Object> readCompound(NbtInput in) throws IOException {
         Map<String, Object> out = new LinkedHashMap<>();
         while (true) {
             byte typeId = in.readByte();
@@ -257,7 +269,7 @@ final class LitematicParser {
             if (type == NbtType.END) {
                 break;
             }
-            String key = in.readUTF();
+            String key = in.readString();
             Object value = readPayload(in, type);
             out.put(key, value);
         }
@@ -281,7 +293,7 @@ final class LitematicParser {
         }
 
         int bitsPerBlock() {
-            return Math.max(2, 32 - Integer.numberOfLeadingZeros(Math.max(1, entries.size() - 1)));
+            return Math.max(2, Integer.toBinaryString(Math.max(1, entries.size() - 1)).length());
         }
 
         SchematicBlockState entry(int index) {
@@ -334,6 +346,60 @@ final class LitematicParser {
                 }
             }
             throw new IllegalArgumentException("Unsupported NBT tag id: " + id);
+        }
+    }
+
+    private static final class NbtInput {
+        private final ByteBuffer buffer;
+
+        private NbtInput(byte[] data, ByteOrder byteOrder) {
+            this.buffer = ByteBuffer.wrap(data).order(byteOrder);
+        }
+
+        byte readByte() throws IOException {
+            requireRemaining(1);
+            return buffer.get();
+        }
+
+        short readShort() throws IOException {
+            requireRemaining(2);
+            return buffer.getShort();
+        }
+
+        int readInt() throws IOException {
+            requireRemaining(4);
+            return buffer.getInt();
+        }
+
+        long readLong() throws IOException {
+            requireRemaining(8);
+            return buffer.getLong();
+        }
+
+        float readFloat() throws IOException {
+            return Float.intBitsToFloat(readInt());
+        }
+
+        double readDouble() throws IOException {
+            return Double.longBitsToDouble(readLong());
+        }
+
+        void readFully(byte[] data) throws IOException {
+            requireRemaining(data.length);
+            buffer.get(data);
+        }
+
+        String readString() throws IOException {
+            int length = Short.toUnsignedInt(readShort());
+            byte[] utf = new byte[length];
+            readFully(utf);
+            return new String(utf, StandardCharsets.UTF_8);
+        }
+
+        private void requireRemaining(int bytes) throws IOException {
+            if (buffer.remaining() < bytes) {
+                throw new IOException("NBT stream ended unexpectedly");
+            }
         }
     }
 

@@ -5,7 +5,7 @@
   "command.sbuild.help.header": "Команды SBuild:",
   "command.sbuild.help.status": ".sbuild status",
   "command.sbuild.help.schematic": ".sbuild schematic scan|list|load <name>|info",
-  "command.sbuild.help.materials": ".sbuild materials|material [report]",
+  "command.sbuild.help.materials": ".sbuild materials|material [report|gui]",
   "command.sbuild.help.chest": ".sbuild chest set [name]|list",
   "command.sbuild.help.planner": ".sbuild planner preview",
   "command.sbuild.help.ai": ".ai_help [query] или .sbuild ai [query]",
@@ -56,10 +56,10 @@
   "command.sbuild.bot.started": "Бот запущен.",
   "command.sbuild.bot.stopped": "Бот остановлен.",
   "command.sbuild.bot.status": "Состояние бота: %s",
-  "command.sbuild.ghost.on": "Призрачная схема включена.",
+  "command.sbuild.ghost.on": "Призрачная схема включена (цельные блоки).",
   "command.sbuild.ghost.off": "Призрачная схема выключена.",
-  "command.sbuild.ghost.status": "Состояние ghost-preview: %s",
+  "command.sbuild.ghost.status": "Состояние ghost-preview (цельные блоки): %s",
   "command.sbuild.ai.reply.bot.ready": "Бот готов. Запусти: .sbuild bot start. Остановить: .sbuild bot stop.",
   "command.sbuild.ai.reply.bot.no_schematic": "Сначала загрузи схему, потом запусти бота: .sbuild bot start.",
-  "command.sbuild.ai.reply.ghost.help": "Призрачная схема: .sbuild ghost on|off|status. Для бота: .sbuild bot start."
+  "command.sbuild.ai.reply.ghost.help": "Призрачная схема (цельные блоки): .sbuild ghost on|off|status. GUI материалов: .sbuild materials gui. Для бота: .sbuild bot start."
 }

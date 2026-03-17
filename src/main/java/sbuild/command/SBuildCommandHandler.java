@@ -1,6 +1,7 @@
 package sbuild.command;
 
 import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -8,6 +9,7 @@ import net.minecraft.text.Text;
 import sbuild.SBuildClientMod;
 import sbuild.ai.AiService;
 import sbuild.bot.BuildBotService;
+import sbuild.client.MaterialListScreen;
 import sbuild.materials.MaterialAnalysisService;
 import sbuild.materials.MaterialAvailability;
 import sbuild.materials.MaterialReport;
@@ -169,6 +171,7 @@ public final class SBuildCommandHandler {
         Map<LoadedSchematic.BlockPosition, String> worldStates = snapshotWorldStates(player, placement);
         MaterialAvailability availability = storage.aggregateAvailability(player.getWorld());
         MaterialReport report = materials.analyze(placement, worldStates, availability);
+        buildState.setLastMaterialReport(report);
 
         sendInfo(source, Text.translatable(
             "command.sbuild.materials.report.summary",
@@ -185,6 +188,18 @@ public final class SBuildCommandHandler {
         if (rows.size() > MATERIAL_ROWS_PREVIEW) {
             sendInfo(source, Text.translatable("command.sbuild.preview.truncated", rows.size() - MATERIAL_ROWS_PREVIEW));
         }
+        return 1;
+    }
+
+    public int handleMaterialsGui(CommandContext<ServerCommandSource> ctx) {
+        MaterialReport report = buildState.lastMaterialReport();
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) {
+            sendError(ctx.getSource(), Text.literal("Клиент Minecraft недоступен."));
+            return 0;
+        }
+        client.execute(() -> client.setScreen(new MaterialListScreen(report)));
+        sendInfo(ctx.getSource(), Text.literal("Открыт GUI материалов."));
         return 1;
     }
 

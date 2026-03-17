@@ -1,5 +1,6 @@
 package sbuild.state;
 
+import sbuild.materials.MaterialReport;
 import sbuild.schematic.LoadedSchematic;
 import sbuild.schematic.PlacementController;
 import sbuild.schematic.SchematicTransform;
@@ -14,6 +15,7 @@ public final class BuildStateService {
     private SchematicTransform transform = SchematicTransform.identity();
     private volatile boolean botEnabled;
     private volatile boolean ghostEnabled = true;
+    private volatile MaterialReport lastMaterialReport = MaterialReport.empty();
 
     public boolean hasActiveBuild() {
         return loadedSchematic != null;
@@ -57,6 +59,15 @@ public final class BuildStateService {
 
     public void setGhostEnabled(boolean ghostEnabled) {
         this.ghostEnabled = ghostEnabled;
+    }
+
+
+    public MaterialReport lastMaterialReport() {
+        return lastMaterialReport;
+    }
+
+    public void setLastMaterialReport(MaterialReport report) {
+        this.lastMaterialReport = report == null ? MaterialReport.empty() : report;
     }
 
     public void clear() {

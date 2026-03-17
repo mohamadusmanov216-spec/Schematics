@@ -73,8 +73,9 @@ SBuild — это архитектурная база для будущего AI
 1. Загрузи схему: `.sbuild schematic load <name>`
 2. Включи ghost preview: `.sbuild ghost on`
 3. Проверь материалы: `.sbuild materials report`
-4. Запусти бота: `.sbuild bot start`
-5. Стоп бота: `.sbuild bot stop`
+4. Открой GUI материалов: `.sbuild materials gui`
+5. Запусти бота: `.sbuild bot start`
+6. Стоп бота: `.sbuild bot stop`
 
 ## 🧩 Технологии
 

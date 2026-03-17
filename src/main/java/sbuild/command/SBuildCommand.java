@@ -34,10 +34,12 @@ public final class SBuildCommand {
 
             .then(CommandManager.literal("materials")
                 .executes(handler::handleMaterialsReport)
-                .then(CommandManager.literal("report").executes(handler::handleMaterialsReport)))
+                .then(CommandManager.literal("report").executes(handler::handleMaterialsReport))
+                .then(CommandManager.literal("gui").executes(handler::handleMaterialsGui)))
             .then(CommandManager.literal("material")
                 .executes(handler::handleMaterialsReport)
-                .then(CommandManager.literal("report").executes(handler::handleMaterialsReport)))
+                .then(CommandManager.literal("report").executes(handler::handleMaterialsReport))
+                .then(CommandManager.literal("gui").executes(handler::handleMaterialsGui)))
 
             .then(CommandManager.literal("planner")
                 .then(CommandManager.literal("preview").executes(handler::handlePlannerPreview)))

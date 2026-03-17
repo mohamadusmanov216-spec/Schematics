@@ -45,6 +45,11 @@ public final class SBuildHudOverlay implements HudRenderCallback {
         drawContext.drawText(client.textRenderer, Text.literal("§eSBuild HUD"), x, y, 0xFFFFFF, true);
         drawContext.drawText(client.textRenderer, Text.literal("§7Схема: §f" + schematic), x, y + 12, 0xFFFFFF, true);
         drawContext.drawText(client.textRenderer, Text.literal("§7Склады: §f" + storages), x, y + 24, 0xFFFFFF, true);
+        String bot = state.isBotEnabled() ? "ON" : "OFF";
+        String ghost = state.isGhostEnabled() ? "ON" : "OFF";
+
         drawContext.drawText(client.textRenderer, Text.literal("§7AI: §f" + api), x, y + 36, 0xFFFFFF, true);
+        drawContext.drawText(client.textRenderer, Text.literal("§7BOT: §f" + bot), x, y + 48, 0xFFFFFF, true);
+        drawContext.drawText(client.textRenderer, Text.literal("§7GHOST: §f" + ghost), x, y + 60, 0xFFFFFF, true);
     }
 }

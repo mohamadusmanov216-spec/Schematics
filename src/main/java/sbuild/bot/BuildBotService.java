@@ -58,6 +58,19 @@ public final class BuildBotService {
         botRuntime.register();
     }
 
+
+    public void start() {
+        botRuntime.start();
+    }
+
+    public void stop() {
+        botRuntime.stop();
+    }
+
+    public boolean isRunning() {
+        return botRuntime.isRunning();
+    }
+
     public BotController botController() {
         return botController;
     }

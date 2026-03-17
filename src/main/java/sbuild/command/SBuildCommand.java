@@ -42,6 +42,16 @@ public final class SBuildCommand {
             .then(CommandManager.literal("planner")
                 .then(CommandManager.literal("preview").executes(handler::handlePlannerPreview)))
 
+
+            .then(CommandManager.literal("bot")
+                .then(CommandManager.literal("start").executes(handler::handleBotStart))
+                .then(CommandManager.literal("stop").executes(handler::handleBotStop))
+                .then(CommandManager.literal("status").executes(handler::handleBotStatus)))
+
+            .then(CommandManager.literal("ghost")
+                .then(CommandManager.literal("on").executes(handler::handleGhostOn))
+                .then(CommandManager.literal("off").executes(handler::handleGhostOff))
+                .then(CommandManager.literal("status").executes(handler::handleGhostStatus)))
             .then(CommandManager.literal("chest")
                 .then(CommandManager.literal("set")
                     .executes(ctx -> handler.handleChestSet(ctx, "chest"))

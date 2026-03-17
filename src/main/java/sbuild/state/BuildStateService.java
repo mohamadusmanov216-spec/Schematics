@@ -12,6 +12,8 @@ import java.util.Optional;
 public final class BuildStateService {
     private LoadedSchematic loadedSchematic;
     private SchematicTransform transform = SchematicTransform.identity();
+    private volatile boolean botEnabled;
+    private volatile boolean ghostEnabled = true;
 
     public boolean hasActiveBuild() {
         return loadedSchematic != null;
@@ -39,6 +41,22 @@ public final class BuildStateService {
             return Optional.empty();
         }
         return Optional.of(new PlacementController(loadedSchematic, transform));
+    }
+
+    public boolean isBotEnabled() {
+        return botEnabled;
+    }
+
+    public void setBotEnabled(boolean botEnabled) {
+        this.botEnabled = botEnabled;
+    }
+
+    public boolean isGhostEnabled() {
+        return ghostEnabled;
+    }
+
+    public void setGhostEnabled(boolean ghostEnabled) {
+        this.ghostEnabled = ghostEnabled;
     }
 
     public void clear() {

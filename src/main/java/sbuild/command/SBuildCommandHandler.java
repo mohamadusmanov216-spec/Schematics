@@ -7,6 +7,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import sbuild.SBuildClientMod;
 import sbuild.ai.AiService;
+import sbuild.bot.BuildBotService;
 import sbuild.materials.MaterialAnalysisService;
 import sbuild.materials.MaterialAvailability;
 import sbuild.materials.MaterialReport;
@@ -35,6 +36,7 @@ public final class SBuildCommandHandler {
     private final StorageService storage;
     private final BuildPlannerService planner;
     private final AiService aiService;
+    private final BuildBotService buildBotService;
 
     public SBuildCommandHandler(
         BuildStateService buildState,
@@ -43,7 +45,8 @@ public final class SBuildCommandHandler {
         MaterialAnalysisService materials,
         StorageService storage,
         BuildPlannerService planner,
-        AiService aiService
+        AiService aiService,
+        BuildBotService buildBotService
     ) {
         this.buildState = buildState;
         this.schematics = schematics;
@@ -52,6 +55,7 @@ public final class SBuildCommandHandler {
         this.storage = storage;
         this.planner = planner;
         this.aiService = aiService;
+        this.buildBotService = buildBotService;
     }
 
     public int handleRoot(CommandContext<ServerCommandSource> ctx) {
@@ -75,6 +79,8 @@ public final class SBuildCommandHandler {
             Text.translatable("command.sbuild.help.materials"),
             Text.translatable("command.sbuild.help.chest"),
             Text.translatable("command.sbuild.help.planner"),
+            Text.translatable("command.sbuild.help.bot"),
+            Text.translatable("command.sbuild.help.ghost"),
             Text.translatable("command.sbuild.help.ai")
         );
         lines.forEach(line -> sendInfo(source, line));
@@ -234,6 +240,44 @@ public final class SBuildCommandHandler {
         for (StoragePoint point : points) {
             sendInfo(ctx.getSource(), Text.translatable("command.sbuild.chest.list.entry", point.name(), formatPos(point), point.priority()));
         }
+        return 1;
+    }
+
+    public int handleBotStart(CommandContext<ServerCommandSource> ctx) {
+        if (buildState.loadedSchematic().isEmpty()) {
+            sendError(ctx.getSource(), Text.translatable("command.sbuild.error.no_loaded_schematic"));
+            return 0;
+        }
+        buildBotService.start();
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.started"));
+        return 1;
+    }
+
+    public int handleBotStop(CommandContext<ServerCommandSource> ctx) {
+        buildBotService.stop();
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.stopped"));
+        return 1;
+    }
+
+    public int handleBotStatus(CommandContext<ServerCommandSource> ctx) {
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.bot.status", buildBotService.isRunning() ? "ON" : "OFF"));
+        return 1;
+    }
+
+    public int handleGhostOn(CommandContext<ServerCommandSource> ctx) {
+        buildState.setGhostEnabled(true);
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.on"));
+        return 1;
+    }
+
+    public int handleGhostOff(CommandContext<ServerCommandSource> ctx) {
+        buildState.setGhostEnabled(false);
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.off"));
+        return 1;
+    }
+
+    public int handleGhostStatus(CommandContext<ServerCommandSource> ctx) {
+        sendInfo(ctx.getSource(), Text.translatable("command.sbuild.ghost.status", buildState.isGhostEnabled() ? "ON" : "OFF"));
         return 1;
     }
 

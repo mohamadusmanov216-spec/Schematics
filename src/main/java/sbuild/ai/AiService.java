@@ -80,6 +80,10 @@ public final class AiService {
             case PLANNER -> hasLoadedSchematic
                 ? reply("command.sbuild.ai.reply.planner.ready")
                 : reply("command.sbuild.ai.reply.planner.no_schematic");
+            case BOT -> hasLoadedSchematic
+                ? reply("command.sbuild.ai.reply.bot.ready")
+                : reply("command.sbuild.ai.reply.bot.no_schematic");
+            case GHOST -> reply("command.sbuild.ai.reply.ghost.help");
             case HELP -> reply("command.sbuild.ai.reply.help");
             case UNKNOWN -> hasLoadedSchematic
                 ? reply("command.sbuild.ai.reply.unknown.loaded", storageCount)
@@ -143,6 +147,8 @@ public final class AiService {
         MATERIALS,
         PLANNER,
         STORAGE,
+        BOT,
+        GHOST,
         HELP,
         UNKNOWN;
 
@@ -151,6 +157,8 @@ public final class AiService {
             MATERIALS,
             PLANNER,
             STORAGE,
+            BOT,
+            GHOST,
             STATUS,
             LOAD,
             HELP
@@ -165,6 +173,8 @@ public final class AiService {
             Intent.STORAGE, setOf("storage", "chest", "сундук", "склад", "хранил", "restock", "сундуки", "склады"),
             Intent.MATERIALS, setOf("material", "материал", "resources", "ресурсы", "need", "нужно", "хват", "enough", "required"),
             Intent.PLANNER, setOf("planner", "plan", "план", "preview", "очеред", "order"),
+            Intent.BOT, setOf("bot", "build bot", "автобот", "автострой", "запусти бота", "start bot", "бот"),
+            Intent.GHOST, setOf("ghost", "призрач", "голограм", "preview blocks", "покажи схему"),
             Intent.HELP, setOf("help", "помощ", "команды", "commands", "что умеешь", "what can")
         );
 

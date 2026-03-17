@@ -78,7 +78,7 @@ public final class BotRuntime {
             return;
         }
 
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getWorld();
         switch (state) {
             case IDLE -> state = RuntimeState.ANALYZING;
             case ANALYZING -> analyze(player);
@@ -107,7 +107,7 @@ public final class BotRuntime {
         }
 
         Map<LoadedSchematic.BlockPosition, String> worldStates = worldService.snapshotBlockStates(
-            player.getServerWorld(),
+            player.getWorld(),
             placement.transformedEntries().stream().map(Map.Entry::getKey).toList()
         );
 

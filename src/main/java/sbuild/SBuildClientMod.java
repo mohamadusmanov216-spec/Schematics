@@ -1,6 +1,6 @@
 package sbuild;
 
-import net.fabricmc.api.ModInitializer;
+import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +15,12 @@ import sbuild.state.BuildStateService;
 import sbuild.storage.StorageService;
 import sbuild.world.WorldService;
 
-public final class SBuildMod implements ModInitializer {
+public final class SBuildClientMod implements ClientModInitializer {
     public static final String MOD_ID = "sbuild";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
-    public void onInitialize() {
+    public void onInitializeClient() {
         BuildStateService buildState = new BuildStateService();
         SchematicService schematics = new SchematicService();
         WorldService world = new WorldService();
@@ -46,6 +46,6 @@ public final class SBuildMod implements ModInitializer {
 
         buildBotService.initialize();
 
-        LOGGER.info("SBuild initialized.");
+        LOGGER.info("SBuild client initialized.");
     }
 }

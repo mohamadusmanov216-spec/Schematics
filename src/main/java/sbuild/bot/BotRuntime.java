@@ -71,7 +71,28 @@ public final class BotRuntime {
         registered = true;
     }
 
+
+    public void start() {
+        buildState.setBotEnabled(true);
+        state = RuntimeState.ANALYZING;
+    }
+
+    public void stop() {
+        buildState.setBotEnabled(false);
+        state = RuntimeState.IDLE;
+        activePath.clear();
+        buildQueue.replaceWith(List.of());
+    }
+
+    public boolean isRunning() {
+        return buildState.isBotEnabled();
+    }
+
     private void onServerTick(MinecraftServer server) {
+        if (!buildState.isBotEnabled()) {
+            state = RuntimeState.IDLE;
+            return;
+        }
         ServerPlayerEntity player = server.getPlayerManager().getPlayerList().stream().findFirst().orElse(null);
         if (player == null) {
             state = RuntimeState.IDLE;
